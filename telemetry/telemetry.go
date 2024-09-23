@@ -69,15 +69,15 @@ func (l *Logger) Debug(message string, tags map[string]string, transactionID str
 }
 
 func (l *Logger) Info(message string, tags map[string]string, transactionID string) error {
-	return l.log(DebugLevel, message, tags, transactionID)
+	return l.log(InfoLevel, message, tags, transactionID)
 }
 
 func (l *Logger) Warning(message string, tags map[string]string, transactionID string) error {
-	return l.log(DebugLevel, message, tags, transactionID)
+	return l.log(WarningLevel, message, tags, transactionID)
 }
 
 func (l *Logger) Error(message string, tags map[string]string, transactionID string) error {
-	return l.log(DebugLevel, message, tags, transactionID)
+	return l.log(ErrorLevel, message, tags, transactionID)
 }
 
 func (l *Logger) StartTransaction() string {
