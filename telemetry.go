@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -18,7 +19,8 @@ const (
 
 type Logger struct {
 	driver       Driver
-	transacitons map[string]*Transaction
+	transactions map[string]*Transaction
+	mutex        sync.Mutex
 }
 
 type Transaction struct {
@@ -85,7 +87,7 @@ func NewFileDriver(filename string) (*FileDriver, error) {
 }
 
 func (f *FileDriver) Log(log Log) error {
-	_, err := fmt.Fprintf(f.file, "%s %s %s %s\n", log.Timestamp, log.Level, log.Message, log.Tags)
+	_, err := fmt.Fprintf(f.file, "%s %s %s %s\n", log.Timestamp.Format(time.RFC3339), log.Level, log.Message, log.Tags)
 	return err
 }
 
@@ -96,7 +98,7 @@ func (f *FileDriver) Close() error {
 func NewLogger(driver Driver) *Logger {
 	return &Logger{
 		driver:       driver,
-		transacitons: make(map[string]*Transaction),
+		transactions: make(map[string]*Transaction),
 	}
 }
 
@@ -127,6 +129,31 @@ func (l *Logger) Error(message string, tags map[string]string, transactionID str
 	return l.log(DebugLevel, message, tags, transactionID)
 }
 
+func (l *Logger) StartTransaction() string {
+	transactionID := fmt.Sprintf("%d", time.Now().UnixNano()) // create a more unique id
+	l.mutex.Lock()
+	l.transactions[transactionID] = &Transaction{
+		ID:    transactionID,
+		Start: time.Now(),
+	}
+	l.mutex.Unlock()
+	return transactionID
+}
+
+func (l *Logger) EndTransaction(transactionID string) error {
+	l.mutex.Lock()
+	transaction, exists := l.transactions[transactionID]
+	if !exists {
+		l.mutex.Unlock()
+		return fmt.Errorf("transaction %s doesnt exist", transactionID)
+	}
+	transaction.End = time.Now()
+	delete(l.transactions, transactionID)
+	l.mutex.Unlock()
+	// maybe log a summary or smth on how lnog it took etc, easier for kibana etc
+	return nil
+}
+
 func main() {
 	/*logger := NewLogger()
 	logger.Debug("This is a debug message", map[string]string{"CPU": "CPU usage at 50%"})
@@ -143,4 +170,16 @@ func main() {
 
 	logger := NewLogger(fileDriver)
 	logger.Debug("This is a debug message", map[string]string{"CPU": "CPU usage at 50%"}, "123")
+
+	jsonDriver, err := NewJSONDriver("log.json")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer jsonDriver.Close()
+
+	logger = NewLogger(jsonDriver)
+	transID := logger.StartTransaction()
+	logger.Debug("This is a debug message", map[string]string{"CPU": "CPU usage at 50%"}, transID)
+	logger.EndTransaction(transID)
 }
