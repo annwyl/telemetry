@@ -130,7 +130,7 @@ func (l *Logger) Error(message string, tags map[string]string, transactionID str
 }
 
 func (l *Logger) StartTransaction() string {
-	transactionID := fmt.Sprintf("%d", time.Now().UnixNano()) // create a more unique id
+	transactionID := generateTransactionID()
 	l.mutex.Lock()
 	l.transactions[transactionID] = &Transaction{
 		ID:    transactionID,
@@ -152,6 +152,10 @@ func (l *Logger) EndTransaction(transactionID string) error {
 	l.mutex.Unlock()
 	// maybe log a summary or smth on how lnog it took etc, easier for kibana etc
 	return nil
+}
+
+func generateTransactionID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
 func main() {
