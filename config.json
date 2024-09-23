@@ -1,0 +1,4 @@
+{
+  "driver": "console",
+  "driver_config": "logs.txt"
+}
