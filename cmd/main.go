@@ -46,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = logger.Warning("This is a warning message", map[string]string{"CPU": "CPU usage is at 69%"}, transactionID)
+	err = logger.Warning("This is a warning message", map[string]string{"CPU": "CPU usage is at 69%"})
 	if err != nil {
 		fmt.Println("failed warning message")
 		os.Exit(1)

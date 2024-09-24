@@ -53,31 +53,42 @@ func (l *Logger) Close() error {
 	return l.driver.Close()
 }
 
-func (l *Logger) log(level LogLevel, message string, tags map[string]string, transactionID string) error {
-	log := Log{
-		Timestamp:     time.Now(),
-		Level:         level,
-		Message:       message,
-		Tags:          tags,
-		TransactionID: transactionID,
+func (l *Logger) log(level LogLevel, message string, tags map[string]string, transactionID ...string) error {
+	if len(transactionID) == 1 {
+		log := Log{
+			Timestamp:     time.Now(),
+			Level:         level,
+			Message:       message,
+			Tags:          tags,
+			TransactionID: transactionID[0],
+		}
+		return l.driver.Log(log)
+	} else {
+		log := Log{
+			Timestamp:     time.Now(),
+			Level:         level,
+			Message:       message,
+			Tags:          tags,
+			TransactionID: "",
+		}
+		return l.driver.Log(log)
 	}
-	return l.driver.Log(log)
 }
 
-func (l *Logger) Debug(message string, tags map[string]string, transactionID string) error {
-	return l.log(DebugLevel, message, tags, transactionID)
+func (l *Logger) Debug(message string, tags map[string]string, transactionID ...string) error {
+	return l.log(DebugLevel, message, tags, transactionID...)
 }
 
-func (l *Logger) Info(message string, tags map[string]string, transactionID string) error {
-	return l.log(InfoLevel, message, tags, transactionID)
+func (l *Logger) Info(message string, tags map[string]string, transactionID ...string) error {
+	return l.log(InfoLevel, message, tags, transactionID...)
 }
 
-func (l *Logger) Warning(message string, tags map[string]string, transactionID string) error {
-	return l.log(WarningLevel, message, tags, transactionID)
+func (l *Logger) Warning(message string, tags map[string]string, transactionID ...string) error {
+	return l.log(WarningLevel, message, tags, transactionID...)
 }
 
-func (l *Logger) Error(message string, tags map[string]string, transactionID string) error {
-	return l.log(ErrorLevel, message, tags, transactionID)
+func (l *Logger) Error(message string, tags map[string]string, transactionID ...string) error {
+	return l.log(ErrorLevel, message, tags, transactionID...)
 }
 
 func (l *Logger) StartTransaction() string {
