@@ -18,6 +18,7 @@ const (
 
 type Logger struct {
 	driver       Driver
+	config       Config
 	transactions map[string]*Transaction
 	mutex        sync.Mutex
 }
@@ -46,6 +47,7 @@ func NewLogger(config Config) *Logger {
 
 	return &Logger{
 		driver:       driver,
+		config:       config,
 		transactions: make(map[string]*Transaction),
 	}
 }
@@ -55,6 +57,14 @@ func (l *Logger) Close() error {
 }
 
 func (l *Logger) log(level LogLevel, message string, tags map[string]string, transactionID ...string) error {
+	if tags != nil {
+		for k, v := range l.config.DefaultTags {
+			tags[k] = v
+		}
+	} else {
+		tags = l.config.DefaultTags
+	}
+
 	if len(transactionID) == 1 {
 		log := Log{
 			Timestamp:     time.Now(),

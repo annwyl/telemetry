@@ -7,8 +7,10 @@ import (
 )
 
 type Config struct {
-	Name   string          `json:"driver"`
-	Config json.RawMessage `json:"driver_config"`
+	Name        string            `json:"driver"`
+	Config      json.RawMessage   `json:"driver_config"`
+	LogLevel    LogLevel          `json:"log_level"`
+	DefaultTags map[string]string `json:"default_tags"`
 }
 
 func LoadConfig(filename string) (Config, error) {

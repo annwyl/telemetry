@@ -1,4 +1,10 @@
 {
   "driver": "console",
-  "driver_config": "logs.txt"
+  "driver_config": "logs.txt",
+  "log_level": 1,
+  "default_tags": {
+    "enviroment": "development",
+    "go_version": "1.22",
+    "app_version": "1.0.0"
+  }
 }
