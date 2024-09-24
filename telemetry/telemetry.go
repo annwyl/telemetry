@@ -97,15 +97,21 @@ func (l *Logger) Error(message string, tags map[string]string, transactionID ...
 }
 
 func (l *Logger) SetLogLevel(level LogLevel) {
+	l.mutex.Lock()
 	l.config.LogLevel = level
+	l.mutex.Unlock()
 }
 
 func (l *Logger) AddDefaultTag(key, value string) {
+	l.mutex.Lock()
 	l.config.DefaultTags[key] = value
+	l.mutex.Unlock()
 }
 
 func (l *Logger) DeleteDefaultTag(key string) {
+	l.mutex.Lock()
 	delete(l.config.DefaultTags, key)
+	l.mutex.Unlock()
 }
 
 func (l *Logger) StartTransaction() string {
