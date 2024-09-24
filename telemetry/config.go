@@ -25,5 +25,13 @@ func LoadConfig(filename string) (Config, error) {
 		return config, fmt.Errorf("failed to decode config file: %v", err)
 	}
 
+	if len(config.Config) == 0 {
+		return config, fmt.Errorf("empty config")
+	}
+
+	if config.Name == "" {
+		return config, fmt.Errorf("no driver specified")
+	}
+
 	return config, nil
 }

@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"crypto/rand"
 	"fmt"
 	"sync"
 	"time"
@@ -117,5 +118,10 @@ func (l *Logger) EndTransaction(transactionID string) error {
 }
 
 func generateTransactionID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano()) // make it still more unique
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("%x", b)
 }
