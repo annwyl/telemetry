@@ -57,33 +57,27 @@ func (l *Logger) Close() error {
 }
 
 func (l *Logger) log(level LogLevel, message string, tags map[string]string, transactionID ...string) error {
-	if tags != nil {
-		for k, v := range l.config.DefaultTags {
-			tags[k] = v
-		}
-	} else {
-		tags = l.config.DefaultTags
+	if tags == nil {
+		tags = make(map[string]string)
+	}
+
+	for k, v := range l.config.DefaultTags {
+		tags[k] = v
+	}
+
+	log := Log{
+		Timestamp:     time.Now(),
+		Level:         level,
+		Message:       message,
+		Tags:          tags,
+		TransactionID: "",
 	}
 
 	if len(transactionID) == 1 {
-		log := Log{
-			Timestamp:     time.Now(),
-			Level:         level,
-			Message:       message,
-			Tags:          tags,
-			TransactionID: transactionID[0],
-		}
-		return l.driver.Log(log)
-	} else {
-		log := Log{
-			Timestamp:     time.Now(),
-			Level:         level,
-			Message:       message,
-			Tags:          tags,
-			TransactionID: "",
-		}
-		return l.driver.Log(log)
+		log.TransactionID = transactionID[0]
 	}
+
+	return l.driver.Log(log)
 }
 
 func (l *Logger) Debug(message string, tags map[string]string, transactionID ...string) error {
