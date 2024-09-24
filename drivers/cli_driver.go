@@ -19,7 +19,10 @@ func (c *ConsoleDriver) Close() error {
 }
 
 func init() {
-	telemetry.RegisterDriver("console", func(_ json.RawMessage) (telemetry.Driver, error) {
+	err := telemetry.RegisterDriver("console", func(_ json.RawMessage) (telemetry.Driver, error) {
 		return &ConsoleDriver{}, nil
 	})
+	if err != nil {
+		panic(err)
+	}
 }

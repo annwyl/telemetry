@@ -13,7 +13,7 @@ type JSONDriver struct {
 }
 
 func init() {
-	telemetry.RegisterDriver("json", func(config json.RawMessage) (telemetry.Driver, error) {
+	err := telemetry.RegisterDriver("json", func(config json.RawMessage) (telemetry.Driver, error) {
 		var filename string
 		if err := json.Unmarshal(config, &filename); err != nil {
 			return nil, err
@@ -28,6 +28,9 @@ func init() {
 			encoder: json.NewEncoder(file),
 		}, nil
 	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (j *JSONDriver) Log(log telemetry.Log) error {

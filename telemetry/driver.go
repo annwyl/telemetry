@@ -14,8 +14,12 @@ type DriverFactory func(config json.RawMessage) (Driver, error)
 
 var registeredDrivers = make(map[string]DriverFactory)
 
-func RegisterDriver(name string, factory DriverFactory) {
+func RegisterDriver(name string, factory DriverFactory) error {
+	if _, ok := registeredDrivers[name]; ok {
+		return fmt.Errorf("driver already registered: %s", name)
+	}
 	registeredDrivers[name] = factory
+	return nil
 }
 
 func GetRegisteredDrivers() map[string]DriverFactory {
@@ -25,7 +29,7 @@ func GetRegisteredDrivers() map[string]DriverFactory {
 func getDriver(config Config) (Driver, error) {
 	factory, ok := registeredDrivers[config.Name]
 	if !ok {
-		return nil, fmt.Errorf("unknown driver: %s", config.Config)
+		return nil, fmt.Errorf("unknown driver: %s", config.Name)
 	}
 
 	return factory(config.Config)

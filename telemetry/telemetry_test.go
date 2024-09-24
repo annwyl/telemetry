@@ -25,24 +25,28 @@ func (m *MockDriver) Close() error {
 }
 
 func TestNewLogger(t *testing.T) {
-	RegisterDriver("mock", func(config json.RawMessage) (Driver, error) {
+	err := RegisterDriver("mockNewLogger", func(config json.RawMessage) (Driver, error) {
 		return &MockDriver{}, nil
 	})
 
+	if err != nil {
+		t.Fatalf("registerdriver gave error: %v", err)
+	}
+
 	config := Config{
-		Name:        "mock",
+		Name:        "mockNewLogger",
 		Config:      json.RawMessage(`{}`),
 		LogLevel:    InfoLevel,
 		DefaultTags: map[string]string{"environment": "test"},
 	}
 
-	logger := NewLogger(config)
-	if logger == nil {
-		t.Fatal("NewLogger returned nil")
+	logger, err := NewLogger(config)
+	if err != nil {
+		t.Fatalf("newlogger returned error: %v", err)
 	}
 
 	if _, ok := logger.driver.(*MockDriver); !ok {
-		t.Error("Logger isnt Mockdriver")
+		t.Error("Logger isn't Mockdriver")
 	}
 }
 
@@ -51,7 +55,7 @@ func TestLogLevels(t *testing.T) {
 	logger := &Logger{
 		driver: mockDriver,
 		config: Config{
-			LogLevel:    InfoLevel,
+			LogLevel:    DebugLevel,
 			DefaultTags: map[string]string{"environment": "test"},
 		},
 	}
@@ -188,17 +192,21 @@ func TestConcurrentLogging(t *testing.T) {
 	wg.Wait()
 
 	if len(mockDriver.logs) != logCount {
-		t.Errorf("wantds %d logs, have %d", logCount, len(mockDriver.logs))
+		t.Errorf("wanted %d logs, have %d", logCount, len(mockDriver.logs))
 	}
 }
 
 func TestConfigurationOverride(t *testing.T) {
-	RegisterDriver("mock", func(config json.RawMessage) (Driver, error) {
+	err := RegisterDriver("mockConfigOverride", func(config json.RawMessage) (Driver, error) {
 		return &MockDriver{}, nil
 	})
 
+	if err != nil {
+		t.Fatalf("registerdriver gave error: %v", err)
+	}
+
 	configContent := `{
-		"driver": "mock",
+		"driver": "mockConfigOverride",
 		"driver_config": "",
 		"log_level": 1,
 		"default_tags": {"environment": "test"}
@@ -224,9 +232,9 @@ func TestConfigurationOverride(t *testing.T) {
 	config.LogLevel = ErrorLevel
 	config.DefaultTags["environment"] = "production"
 
-	logger := NewLogger(config)
-	if logger == nil {
-		t.Fatal("newlogger returned nil")
+	logger, err := NewLogger(config)
+	if err != nil {
+		t.Fatalf("newlogger returned error: %v", err)
 	}
 
 	if logger.config.LogLevel != ErrorLevel {

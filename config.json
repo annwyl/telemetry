@@ -3,7 +3,7 @@
   "driver_config": "logs.txt",
   "log_level": 1,
   "default_tags": {
-    "enviroment": "development",
+    "environment": "development",
     "go_version": "1.22",
     "app_version": "1.0.0"
   }

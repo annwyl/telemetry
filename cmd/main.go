@@ -20,8 +20,8 @@ func main() {
 		fmt.Println(name)
 	}
 
-	logger := telemetry.NewLogger(config)
-	if logger == nil {
+	logger, err := telemetry.NewLogger(config)
+	if err != nil {
 		fmt.Println("failed to create logger")
 		os.Exit(1)
 	}

@@ -14,7 +14,7 @@ type FileDriver struct {
 }
 
 func init() {
-	telemetry.RegisterDriver("file", func(config json.RawMessage) (telemetry.Driver, error) {
+	err := telemetry.RegisterDriver("file", func(config json.RawMessage) (telemetry.Driver, error) {
 		var filename string
 		if err := json.Unmarshal(config, &filename); err != nil {
 			return nil, err
@@ -26,6 +26,9 @@ func init() {
 		}
 		return &FileDriver{file: file}, nil
 	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (f *FileDriver) Log(log telemetry.Log) error {

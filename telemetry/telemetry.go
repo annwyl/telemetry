@@ -38,18 +38,17 @@ type Log struct {
 	TransactionID string
 }
 
-func NewLogger(config Config) *Logger {
+func NewLogger(config Config) (*Logger, error) {
 	driver, err := getDriver(config)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return nil, fmt.Errorf("failed to create logger: %v", err)
 	}
 
 	return &Logger{
 		driver:       driver,
 		config:       config,
 		transactions: make(map[string]*Transaction),
-	}
+	}, nil
 }
 
 func (l *Logger) Close() error {
@@ -59,19 +58,31 @@ func (l *Logger) Close() error {
 func (l *Logger) log(level LogLevel, message string, tags map[string]string, transactionID ...string) error {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
-	if tags == nil {
-		tags = make(map[string]string)
+
+	if level < l.config.LogLevel {
+		return nil
 	}
 
-	for k, v := range l.config.DefaultTags {
-		tags[k] = v
+	count := len(tags) + len(l.config.DefaultTags)
+
+	var finalTags map[string]string
+	if count > 0 {
+		finalTags = make(map[string]string, count)
+
+		for k, v := range l.config.DefaultTags {
+			finalTags[k] = v
+		}
+
+		for k, v := range tags {
+			finalTags[k] = v
+		}
 	}
 
 	log := Log{
 		Timestamp:     time.Now(),
 		Level:         level,
 		Message:       message,
-		Tags:          tags,
+		Tags:          finalTags,
 		TransactionID: "",
 	}
 
@@ -132,7 +143,7 @@ func (l *Logger) EndTransaction(transactionID string) error {
 	defer l.mutex.Unlock()
 	transaction, exists := l.transactions[transactionID]
 	if !exists {
-		return fmt.Errorf("transaction %s doesnt exist", transactionID)
+		return fmt.Errorf("endtransaction %s doesnt exist", transactionID)
 	}
 	transaction.End = time.Now()
 	delete(l.transactions, transactionID)
