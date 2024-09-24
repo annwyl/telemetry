@@ -57,6 +57,8 @@ func (l *Logger) Close() error {
 }
 
 func (l *Logger) log(level LogLevel, message string, tags map[string]string, transactionID ...string) error {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	if tags == nil {
 		tags = make(map[string]string)
 	}
@@ -117,24 +119,23 @@ func (l *Logger) DeleteDefaultTag(key string) {
 func (l *Logger) StartTransaction() string {
 	transactionID := generateTransactionID()
 	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	l.transactions[transactionID] = &Transaction{
 		ID:    transactionID,
 		Start: time.Now(),
 	}
-	l.mutex.Unlock()
 	return transactionID
 }
 
 func (l *Logger) EndTransaction(transactionID string) error {
 	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	transaction, exists := l.transactions[transactionID]
 	if !exists {
-		l.mutex.Unlock()
 		return fmt.Errorf("transaction %s doesnt exist", transactionID)
 	}
 	transaction.End = time.Now()
 	delete(l.transactions, transactionID)
-	l.mutex.Unlock()
 	// maybe log a summary or smth on how lnog it took etc, easier for kibana etc
 	return nil
 }

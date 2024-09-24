@@ -2,15 +2,20 @@ package telemetry
 
 import (
 	"encoding/json"
+	"os"
+	"sync"
 	"testing"
 	"time"
 )
 
 type MockDriver struct {
 	logs []Log
+	mu   sync.Mutex
 }
 
 func (m *MockDriver) Log(log Log) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.logs = append(m.logs, log)
 	return nil
 }
@@ -113,3 +118,124 @@ func TestTransaction(t *testing.T) {
 		t.Error("endtransaction should return error as empty")
 	}
 }
+
+func TestSetLogLevel(t *testing.T) {
+	logger := &Logger{
+		driver: &MockDriver{},
+		config: Config{LogLevel: InfoLevel},
+	}
+
+	logger.SetLogLevel(DebugLevel)
+	if logger.config.LogLevel != DebugLevel {
+		t.Errorf("wanted log level to be debuglevel, got %v", logger.config.LogLevel)
+	}
+}
+
+func TestDefaultTags(t *testing.T) {
+	logger := &Logger{
+		driver: &MockDriver{},
+		config: Config{DefaultTags: make(map[string]string)},
+	}
+
+	logger.AddDefaultTag("app_name", "telemetry")
+	if logger.config.DefaultTags["app_name"] != "telemetry" {
+		t.Errorf("wanted default tag 'key: value', got '%s'", logger.config.DefaultTags["key"])
+	}
+
+	logger.DeleteDefaultTag("app_name")
+	if _, exists := logger.config.DefaultTags["app_name"]; exists {
+		t.Error("wanted default tag deleted, still exists")
+	}
+}
+
+func TestUniqueTransactions(t *testing.T) {
+	logger := &Logger{
+		driver:       &MockDriver{},
+		transactions: make(map[string]*Transaction),
+	}
+
+	trx1 := logger.StartTransaction()
+	trx2 := logger.StartTransaction()
+	if trx1 == trx2 {
+		t.Error("transaction should be unique")
+	}
+}
+
+func TestConcurrentLogging(t *testing.T) {
+	mockDriver := &MockDriver{}
+	logger := &Logger{
+		driver: mockDriver,
+		config: Config{
+			LogLevel:    InfoLevel,
+			DefaultTags: map[string]string{"environment": "test"},
+		},
+	}
+
+	var wg sync.WaitGroup
+	logCount := 10
+
+	wg.Add(logCount)
+	for i := 0; i < logCount; i++ {
+		go func(i int) {
+			defer wg.Done()
+			err := logger.Info("threaded log message", map[string]string{"environment": "test"})
+			if err != nil {
+				t.Errorf("error in threaded logging: %v", err)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	if len(mockDriver.logs) != logCount {
+		t.Errorf("wantds %d logs, have %d", logCount, len(mockDriver.logs))
+	}
+}
+
+func TestConfigurationOverride(t *testing.T) {
+	RegisterDriver("mock", func(config json.RawMessage) (Driver, error) {
+		return &MockDriver{}, nil
+	})
+
+	configContent := `{
+		"driver": "mock",
+		"driver_config": "",
+		"log_level": 1,
+		"default_tags": {"environment": "test"}
+	}`
+	tmpfile, err := os.CreateTemp("", "config.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write([]byte(configContent)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := LoadConfig(tmpfile.Name())
+	if err != nil {
+		t.Fatalf("loadConfig returned error: %v", err)
+	}
+
+	config.LogLevel = ErrorLevel
+	config.DefaultTags["environment"] = "production"
+
+	logger := NewLogger(config)
+	if logger == nil {
+		t.Fatal("newlogger returned nil")
+	}
+
+	if logger.config.LogLevel != ErrorLevel {
+		t.Errorf("wanted loglevel %v, got %v", ErrorLevel, logger.config.LogLevel)
+	}
+
+	if logger.config.DefaultTags["environment"] != "production" {
+		t.Errorf("wanted default tag 'environment: production', got '%s'", logger.config.DefaultTags["environment"])
+	}
+}
+
+// probably also test if timestamps are correct, lots of logs, long transactions
