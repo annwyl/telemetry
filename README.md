@@ -35,6 +35,14 @@ Configuration is done through the `config.json` like:
 
 You can write your own driver by putting it into the drivers folder, and specifing it in the `config.json`. There are multiple drivers already, which can be used as an example or starting point.
 
+### Possible improvements
+
+- Using a buffer for logging
+- More sophisticated error handling
+- Log rotation configuration
+- Clean up transaction code
+- Write some more tests
+
 ### License
 
 Use it as you wish
